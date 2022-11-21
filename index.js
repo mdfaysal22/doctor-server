@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const port  = process.env.PORT || 5000;   //Port 
 
@@ -27,6 +28,7 @@ async function run() {
     try{
         const appointmentOptions = client.db('Doctor-portal').collection('appointment-Options');
         const bookingsCollections = client.db('Doctor-portal').collection('bookings');
+        const usersCollections = client.db('Doctor-portal').collection('users');
 
         app.get('/appointmentOptions', async(req, res) => {
             const query = {}
@@ -47,6 +49,17 @@ async function run() {
 
         app.post('/bookings', async(req, res) => {
             const bookings = req.body;
+            const query = {
+                date: bookings.date,
+                nameOfAppointment: bookings.nameOfAppointment,
+                email: bookings.email
+            }
+            const bookedItem = await bookingsCollections.find(query).toArray();
+            if(bookedItem.length){
+                const message = `You have already have a book on ${bookings.date}`
+                return res.send({acknowledged: false,message});
+            }
+
             const bookingData = await bookingsCollections.insertOne(bookings);
             res.send(bookingData);
         })
@@ -57,6 +70,20 @@ async function run() {
             const bookings = await cursor.toArray();
             res.send(bookings);
         })
+        app.post('/users', async(req, res) => {
+            const user = req.body;
+            const userData = await usersCollections.insertOne(user);
+            res.send(userData);
+        })
+
+        app.get('/users', async(req, res) => {
+            const query = {};
+            const cursor = usersCollections.find(query);
+            const users = await cursor.toArray();
+            res.send(users);
+        })
+
+        
 
 
 
